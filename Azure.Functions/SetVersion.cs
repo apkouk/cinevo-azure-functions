@@ -8,7 +8,7 @@ namespace SetVersion
 {
     public static class SetVersion
     {
-        [FunctionName("SetVertsion")]
+        [FunctionName("SetVersion")]
         //{second} {minute} {hour} {day} {month} {day-of-week}
         public static async Task RunAsync([TimerTrigger("0 0 5 * * *")]TimerInfo myTimer, ILogger log, ExecutionContext context)
         {
