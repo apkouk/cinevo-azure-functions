@@ -1,16 +1,12 @@
 ﻿using Microsoft.Azure.Cosmos;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
-using System.Net;
-using System.Security;
-using System.Text;
-using System.Threading.Tasks;
-using System.Configuration;
-using Microsoft.Extensions.Configuration;
-using SetVersion.Models;
-using Version = SetVersion.Models.Version;
 using System.Linq;
-using Microsoft.Extensions.Logging;
+using System.Net;
+using System.Threading.Tasks;
+using Version = SetVersion.Models.Version;
 
 namespace SetVersion.Workers
 {
@@ -22,11 +18,11 @@ namespace SetVersion.Workers
         private IConfigurationRoot _config;
         private ILogger _log;
 
-
         public async Task SetVersion(IConfigurationRoot config, ILogger log)
         {
             _config = config;
             _log = log;
+            _log.LogInformation("Creating CosmoClient... \n");
             cosmosClient = new CosmosClient(_config["EndpointUri"], _config["SecondaryKey"]);
             await CreateDatabase();
             await CreateContainer();
@@ -34,8 +30,9 @@ namespace SetVersion.Workers
 
         private async Task CreateDatabase()
         {
+            _log.LogInformation("Checking if database exists... \n");
             database = await cosmosClient.CreateDatabaseIfNotExistsAsync(_config["DatabaseId"]);
-            _log.LogInformation("Created Database: \n", database.Database.Id);
+
         }
 
         private async Task DeleteContainer()
@@ -47,32 +44,33 @@ namespace SetVersion.Workers
 
         private async Task CreateContainer()
         {
-            _log.LogInformation("Creating version container");
-           container = await database.Database.CreateContainerIfNotExistsAsync(_config["VersionContainerId"], "/version");
+            _log.LogInformation("Updating version... \n");
+            container = await database.Database.CreateContainerIfNotExistsAsync(_config["VersionContainerId"], "/version");
 
             FeedIterator<Version> setIterator = container.Container.GetItemLinqQueryable<Version>()
-                     .Where(b => b.Date < DateTime.Now)
+                     .Where(b => b.Id.ToString() != "")
                      .ToFeedIterator();
 
-           
-            if (setIterator.HasMoreResults)
+
+            //if (setIterator.HasMoreResults)
+            //{
+            while (setIterator.HasMoreResults)
             {
-                while (setIterator.HasMoreResults)
+                FeedResponse<Version> queryResponse = await setIterator.ReadNextAsync();
+                IEnumerator<Version> iter = queryResponse.GetEnumerator();
+                while (iter.MoveNext())
                 {
-                    FeedResponse<Version> queryResponse = await setIterator.ReadNextAsync();
-                    IEnumerator<Version> iter = queryResponse.GetEnumerator();
-                    while (iter.MoveNext())
-                    {
-                        Version version = new Version { Id = iter.Current.Id, Date = DateTime.Now };
-                        await container.Container.UpsertItemAsync<Version>(version);
-                        _log.LogInformation("Version Updated: \n" + version.Id + " Date: " + version.Date);
-                    }
+                    Version version = new Version { Id = iter.Current.Id, Date = DateTime.Now };
+                    _log.LogInformation("VERSION UPDATED -> Id: " + version.Id + " Date: " + version.Date);
+                    await container.Container.UpsertItemAsync<Version>(version);
+                
                 }
             }
-            else
-            {
-                await CreateBaseVersion();
-            }
+            //}
+            //else
+            //{
+            //    await CreateBaseVersion();
+            //}
 
         }
 

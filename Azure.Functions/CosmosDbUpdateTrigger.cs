@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Net.Http;
 using Microsoft.Azure.Documents;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Host;
@@ -15,13 +16,15 @@ namespace Azure.Functions
             collectionName: "versions",
             ConnectionStringSetting = "DatabaseConnection",
             LeaseCollectionName = "leases",
-            CreateLeaseCollectionIfNotExists = true, // Add this line
+            CreateLeaseCollectionIfNotExists = true,
             LeaseCollectionPrefix ="CosmosDbUpdateTrigger")]IReadOnlyList<Document> input, ILogger log)
         {
             if (input != null && input.Count > 0)
             {
-                log.LogInformation("Documents modified " + input.Count);
-                log.LogInformation("First document Id " + input[0].Id);
+                log.LogInformation("Updating cinema data... \n");
+                HttpClient client = new HttpClient();
+                HttpResponseMessage responseMessage = client.GetAsync("https://cinevoazurefunctions.azurewebsites.net/api/CinemaScrapper?code=NYIH2qVhqSyEHRjohSINjYseGrAbEGqAdfSMskzoSXIEkVP2Zj5/bg==&name=Paco").Result;
+                log.LogInformation("Message from cinemas scrapper " + responseMessage.StatusCode);
             }
         }
     }
