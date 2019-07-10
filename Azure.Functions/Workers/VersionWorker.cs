@@ -9,6 +9,7 @@ using System.Configuration;
 using Microsoft.Extensions.Configuration;
 using SetVersion.Models;
 using Version = SetVersion.Models.Version;
+using System.Linq;
 
 namespace SetVersion.Workers
 {
@@ -25,9 +26,9 @@ namespace SetVersion.Workers
             _config = config;
             cosmosClient = new CosmosClient(_config["EndpointUri"], _config["SecondaryKey"]);
             await CreateDatabase();
-            await DeleteContainer();
+            //await DeleteContainer();
             await CreateContainer();
-            await AddItemsToContainer();
+            //await AddItemsToContainer();
         }
 
         private async Task CreateDatabase()
@@ -46,7 +47,23 @@ namespace SetVersion.Workers
         private async Task CreateContainer()
         {
             container = await database.Database.CreateContainerIfNotExistsAsync(_config["VersionContainerId"], "/version");
-            Console.WriteLine("Created Container: {0}\n", container.Container.Id);
+
+            FeedIterator<Version> setIterator = container.Container.GetItemLinqQueryable<Version>()
+                     .Where(b => b.Date < DateTime.Now)
+                     .ToFeedIterator();
+
+            //Asynchronous query execution
+            while (setIterator.HasMoreResults)
+            {
+                FeedResponse<Version> queryResponse = await setIterator.ReadNextAsync();
+                IEnumerator<Version> iter = queryResponse.GetEnumerator();
+                while (iter.MoveNext())
+                {
+                    Version version = new Version { Id = iter.Current.Id, Date = DateTime.Now };
+                    await container.Container.UpsertItemAsync<Version>(version);
+                    Console.WriteLine("Version Updated: {0}\n", version.Date);
+                }
+            }
         }
 
         private async Task AddItemsToContainer()
