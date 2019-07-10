@@ -17,7 +17,7 @@ namespace SetVersion
                                                     .AddEnvironmentVariables()
                                                     .Build();
 
-            await new VersionWorker().SetVersion(config);
+            await new VersionWorker().SetVersion(config, log);
 
         }
     }
