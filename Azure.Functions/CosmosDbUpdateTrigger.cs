@@ -23,7 +23,7 @@ namespace Azure.Functions
             {
                 log.LogInformation("Updating cinema data... \n");
                 HttpClient client = new HttpClient();
-                HttpResponseMessage responseMessage = client.GetAsync("https://cinevoazurefunctions.azurewebsites.net/api/CinemaScrapper?code=NYIH2qVhqSyEHRjohSINjYseGrAbEGqAdfSMskzoSXIEkVP2Zj5/bg==&name=Paco").Result;
+                HttpResponseMessage responseMessage = client.GetAsync("https://cinevoazurefunctionsapp.azurewebsites.net/api/CinemaScrapper?code=ifaHC20/0xB/bvOReQ/bhsAO1wezZ4yWFlXzkLlkL7x1AHEbJnvV4Q==&name=Paco").Result;
                 log.LogInformation("Message from cinemas scrapper " + responseMessage.StatusCode);
             }
         }
