@@ -10,14 +10,17 @@ namespace SetVersion
     {
         [FunctionName("SetVersion")]
         //{second} {minute} {hour} {day} {month} {day-of-week}
+        //public static async Task RunAsync([TimerTrigger("0 0 5 * * *")]TimerInfo myTimer, ILogger log, ExecutionContext context)
+
         public static async Task RunAsync([TimerTrigger("0 0 5 * * *")]TimerInfo myTimer, ILogger log, ExecutionContext context)
         {
+            log.LogInformation("\n\n Executing SerVersion");
             var config = new ConfigurationBuilder().SetBasePath(context.FunctionAppDirectory)
                                                     .AddJsonFile("local.settings.json", optional: true, reloadOnChange: true)
                                                     .AddEnvironmentVariables()
                                                     .Build();
 
-            await new VersionWorker().SetVersion(config);
+            await new VersionWorker().SetVersion(config, log);
 
         }
     }
